@@ -8,3 +8,6 @@
 - Reset = Removes all tasks and resets the ID to 0
 - Exit = Exits the program
 - Help = Shows you keywords
+
+
+This is for a roadmap.sh project (https://roadmap.sh/projects/task-tracker)
