@@ -1,78 +1,94 @@
 import time as t
 import json
 import os
-import shutil
 import id_actions
 
 ID = 0
 
 def add():
 
+    task_file_path = "tasks.json"
+
+    task_name = input("What do you want to add?\n")
+
     ID = id_actions.load_id()
-
-
-    task = input("What do you want to add? \n") #allows user to input task
-
     ID += 1
 
-    tasks_dir = "Tasks"
-    os.makedirs(tasks_dir, exist_ok= True)
-
-    file_path = os.path.join(tasks_dir, f"{ID}.json")
+    if os.path.exists(task_file_path):
+        with open(task_file_path, "r") as f:
+            try:
+                tasks = json.load(f)
+            except json.JSONDecodeError:
+                tasks = {}
+    else:
+        tasks = {}
 
     task_data = {
-        "task name": task,
-        "creation date (ctime)": t.ctime(),
-        "status": "TODO", #WORK ON THIS
-        "id": ID
-    } #task data
+        "Task Name": task_name,
+        "Task ID": ID,
+        "Date Added": t.ctime(),
+        "Status": "TODO"
+    }
 
-    with open(file_path, "w") as file: #creates a JSON new file 
-        json.dump(task_data, file, indent=4) #dumps contents of task_data_json_string to a json file
-    print(f"The ID of this task is {ID} \n")
+    tasks[str(ID)] = task_data
 
     id_actions.save_id(ID)
 
+    with open(task_file_path, "w") as f:
+        json.dump(tasks, f, indent = 4)
+
+    print(f"{task_name} has been added (ID:{ID})")
+#finished add
 def remove():
 
-    delete_id = input("Which task do you want to delete? (use task ID) \n")
+    global_id = id_actions.load_id()
 
-    if os.path.exists("Tasks"):
-        os.chdir("Tasks")
-        os.remove(f"{delete_id}.json")
-        print("Deleted Task! \n")
+    ID = input("Which task do you want to delete? (use task ID) \n")
+    path = "tasks.json"
 
-        os.chdir("..")
+    if os.path.exists(path):
+        try:
+            with open(path, "r") as f:
+                tasks = json.load(f)
+        except json.JSONDecodeError:
+            print("file not found")
+            tasks = {}
 
-        id = id_actions.load_id()
-        id_actions.save_id(id)
-    
+        if ID in tasks:
+            del tasks[ID]
+            global_id -= 1
+            id_actions.save_id(global_id)
+        else:
+            print("You do not have a task to delete\n")
+
+        with open(path, "w") as f:
+            json.dump(tasks, f, indent = 4)
+            
+
     else:
-        print("You do not have any tasks to remove \n")
-    
+        print("You do not have any tasks \n")
+#finished remove  
 def list():
-    tasks_dir = "Tasks"
+    task_file_path = "tasks.json"
 
-    if not os.path.exists(tasks_dir):
-        print("You have no tasks.\n")
-        return
+    if os.path.exists(task_file_path):
 
-    task_files = os.listdir(tasks_dir)
-    if not task_files:
-        print("You have no tasks.\n")
-        return
+        with open(task_file_path, "r") as f:
+            try:
+                tasks_string = json.load(f)
+            except json.JSONDecodeError:
+                print("Tasks file is corrupted")
 
-    print("Your tasks:\n")
-    for filename in task_files:
-        if filename.endswith(".json"):
-            file_path = os.path.join(tasks_dir, filename)
-            with open(file_path, "r") as f:
-                task_data = json.load(f)
-                task_name = task_data.get("task name", "Unknown task")
-                task_id = task_data.get("id", "No ID")
-                creation_date = task_data.get("creation date (ctime)", "Creation Date Not Found")
-                print(f"Task: {task_name} \n\tCreation Date: {creation_date} \n\tID: {task_id}")
-    
+        for task_id, task_data in tasks_string.items():
+            task_name = task_data["Task Name"]
+            creation_date = task_data ["Date Added"]
+            task_status = task_data["Status"]
+
+            print(f"Task Name: {task_name} \n\n\tCreation Date: {creation_date}\n\tStatus: {task_status}\n\tID: {task_id}\n")
+
+    else:
+        print("You do not have any tasks")
+#finished list
 def reset():
     confirm = input("Are you sure you want to reset everything (Y/N)").lower()
 
@@ -84,74 +100,88 @@ def reset():
         else:
             print("You do not have an ID file to reset \n")
 
-        if os.path.exists("Tasks"):
-            shutil.rmtree("Tasks")
+        if os.path.exists("tasks.json"):
+            os.remove("tasks.json")
         else:
             print("You have no tasks \n")
-
+#finished reset
 def update():
     
-    id = input("What task do you want to update")
-    path = os.path.join("Tasks", f"{id}.json")
+    id = input("What task do you want to update (use task ID)\n")
 
-    if not os.path.exists(path):
-        print("This task doesn't exist \n")
+    if os.path.exists("tasks.json"):
+        with open("tasks.json", "r") as f:
+            tasks = json.load(f)
 
-    if os.path.exists(path):
+        if id in tasks:
+            ided_task = tasks[id]
+        else:
+            print("ID doesn't exist")
 
-        with open(path, "r") as f:
-            data = json.load(f)
+        change_to = input(f"What do you want to change the task to? (it was \"{ided_task["Task Name"]}\")\n")
 
-        data.get("task name")
-        y = input("What do you want to change the task to? \n")
+        ided_task["Task Name"] = change_to
 
-        data["task name"] = y
-
-        with open(path, "w") as f:
-            json.dump(data, f, indent=4)
-
+        with open("tasks.json", "w") as f:
+            json.dump(tasks, f, indent = 4)
+#finished update
 def status():
     
     id = input("What tasks status do you want to update? \n")
 
-    path = os.path.join("Tasks", f"{id}.json")
 
-    if os.path.exists(path):
+    if os.path.exists("tasks.json"):
 
-        with open(path, "r") as f:
-            status_to = input("What do you want to change the status to (C = complete, I = in progress, T = todo, CA = cancel)\n").lower()
+        with open("tasks.json", "r") as f:
 
-            data = json.load(f)
+            status_to = input("What do you want to change the status to (C = complete, I = in progress, T = todo)\n").lower()
 
-            print(data)
-
+            try:
+                data = json.load(f)
+            except json.JSONDecodeError:
+                print("file is corrupted")
+            task = data[id]
 
 
         if status_to in ["complete", "c"]:
             
-            data["status"] = "COMPLETE"
+            task["Status"] = "COMPLETE"
 
-            with open(path, "w") as f:
+            with open("tasks.json", "w") as f:
                 json.dump(data, f, indent = 4)
 
             print(f"Updated task {id} to completed \n")
 
         elif status_to in ["in progress", "i"]:
-            data["status"] = "IN PROGRESS"
+            task["Status"] = "IN PROGRESS"
 
-            with open(path, "w") as f:
+            with open("tasks.json", "w") as f:
                 json.dump(data, f, indent = 4)
 
             print(f"Updated task {id} to in progress \n")
 
         elif status_to in ["todo", "t"]:
 
-            data["status"] = "TODO"
+            task["Status"] = "TODO"
 
-            with open(path, "w") as f:
+            with open("tasks.json", "w") as f:
                 json.dump(data, f, indent = 4)
 
             print(f"Updated task {id} to todo \n")
 
     else:
         print("You have no tasks")
+#finished status
+def help():
+    print("""
+
+Add = Add a task to your task list
+Remove = Remove a task from your task list
+Update = Update the name of a task
+Change Status = Changes the status of a task (the default status of a task is "TODO")
+List = Lists all tasks, IDs, creation times, and status'
+Reset = Removes all tasks and resets the ID to 0
+Exit = Exits the program
+Help = Shows you the list of keywords and what they do
+
+""")

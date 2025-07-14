@@ -3,7 +3,7 @@ import actions
 running = True
 
 while running:
-    action = input("What do you want to do? (A = add, U = update, S = update status, R = remove, L = list, E = exit, RE = reset) \n").lower()
+    action = input("What do you want to do? (A = add,  R = remove, U = update, S = change status, L = list, RE = reset, E = exit, H = help) \n").lower()
 
     if action in ["exit", "e"]:
         running = False
@@ -25,6 +25,9 @@ while running:
 
     elif action in ["status", "s"]:
         actions.status()
+
+    elif action in ["help", "h"]:
+        actions.help()
 
     else:
         print("Invalid input. Please enter A, R, E, or RE.")
